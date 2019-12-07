@@ -1,0 +1,58 @@
+﻿<UserControl x:Class="VehicleDetectionProject.Views.ParkingDataView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:fa="http://schemas.fontawesome.io/icons/"
+             xmlns:local="clr-namespace:VehicleDetectionProject.Views"
+             xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
+             mc:Ignorable="d" 
+             Background="#222831"
+             d:DesignHeight="860" d:DesignWidth="1250" Loaded="ParkingDataView_Loaded">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="321*"/>
+            <RowDefinition Height="539*"/>
+        </Grid.RowDefinitions>
+        <Grid Margin="262,20,252,0">
+            <Border Background="#393e46" BorderThickness="1,1,1,1" CornerRadius="15" HorizontalAlignment="Center" >
+                <StackPanel>
+                    <StackPanel Orientation="Horizontal" Height="55" HorizontalAlignment="Center">
+                        <TextBlock Text="Parking History" FontWeight="Bold" TextAlignment="Center" Foreground="#00adb5" FontSize="35" HorizontalAlignment="Center" Width="594"/>
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" Height="75" HorizontalAlignment="Center" Margin="36,0,61,0" Width="590">
+                        <materialDesign:PackIcon Kind="Parking" Width="35" Height="35" Margin="10 0 10 0" VerticalAlignment="Center" Foreground="#FF2085FF"></materialDesign:PackIcon>
+                        <TextBlock Text="Parking Lot" FontWeight="Bold" VerticalAlignment="Center" Foreground="#00fff5" FontSize="25" Margin="0,0, 20, 0"/>
+                        <ComboBox x:Name="comboBoxParkingLot" Height="45" FontSize="25" VerticalContentAlignment="Center" Width="304"  Template="{DynamicResource ComboBoxControlTemplate1}" Margin="0,15"/>
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" Height="75" HorizontalAlignment="Center">
+                        <materialDesign:PackIcon Kind="DateRange" Height="35" Width="35" Margin="10 20 10 0" Foreground="White"/>
+                        <TextBlock Text="Date" FontWeight="Bold" Foreground="#00fff5" FontSize="25" VerticalAlignment="Center" />
+                        <TextBox x:Name="textBoxCameraURL" Margin="100,5" FontSize="25" Height="45" VerticalContentAlignment="Bottom" TextWrapping="Wrap" Width="304" Text="{Binding SelectedItem.CameraURL, ElementName=comboBoxParkingLot}"/>
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Bottom" Height="65" HorizontalAlignment="Center">
+                        <Button x:Name="buttonAddCamera" BorderBrush="Wheat"  BorderThickness="2" Background="#FF06BBBB" Foreground="White" Content="Confirm" FontSize="25" Margin="200,8,85,7" Width="240" Height="50" Click="buttonAddCamera_Click"/>
+                        <Button x:Name="buttonRefresh" BorderBrush="Wheat" BorderThickness="2" Background="#FF06BBBB" Foreground="White" FontSize="25"  Width="124" Height="50" Click="buttonRefresh_Click" Margin="0,8,0,7">
+                            <materialDesign:PackIcon Kind="DatabaseRefresh" Width="50" Height="50" Foreground="White"/>
+                        </Button>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+        </Grid>
+
+        <ListView x:Name="listViewParkingLot" Margin="262,45,252,134" Grid.Row="1">
+            <ListView.View>
+                <GridView>
+                    <GridViewColumn Header="Activity Time" Width="Auto" DisplayMemberBinding="{Binding LotName}"/>
+                    <GridViewColumn Header="Car Parked" Width="Auto" DisplayMemberBinding="{Binding LotNumber}"/>
+                    <GridViewColumn Header="Parking Lot ID" Width="Auto" DisplayMemberBinding="{Binding CameraURL}"/>
+                </GridView>
+            </ListView.View>
+        </ListView>
+        <Grid HorizontalAlignment="Left" Height="235" Margin="315,41,0,0" VerticalAlignment="Top" Width="670">
+            <fa:ImageAwesome x:Name="LoadingData" Icon="Gear" Spin="True" Visibility="Hidden" Foreground="DarkGray" SpinDuration="2" Margin="372,34,400,112" />
+            <fa:ImageAwesome x:Name="RefreshDataIcon" Icon="Refresh" Spin="True" Visibility="Hidden" Foreground="DarkGray" SpinDuration="2" Margin="372,34,400,112" />
+            <materialDesign:PackIcon x:Name="NoConnection" Kind="Alert" Width="76" Height="50" Foreground="Red" VerticalAlignment="Center" Visibility="Hidden" Margin="178,38,0,147" ToolTip="Connection Failed"/>
+        </Grid>
+    </Grid>
+</UserControl>
