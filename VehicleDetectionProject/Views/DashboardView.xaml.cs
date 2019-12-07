@@ -36,11 +36,13 @@ namespace VehicleDetectionProject.Views
         public void CarDidEnter(VideoInterpreter vi)
         {
             //cal car did enter stored procedire here with the currently selected parking lot id
+            System.Diagnostics.Debug.WriteLine("CAR DID ENTER CALLED");
         }
 
         public void CarDidLeave(VideoInterpreter vi)
         {
             //Call car did leave stored procedure here with the currently selected prarking lot id
+            System.Diagnostics.Debug.WriteLine("CAR DID LEAVE CALLED");
         }
 
         public DashboardView()
@@ -50,7 +52,7 @@ namespace VehicleDetectionProject.Views
 
         private void DashboardView_Loaded(object sender, RoutedEventArgs e)
         {
-            FillDataAsync();
+            FillDataAsync();              
         }
 
         //User selects a parking lot and displays existing camera URL
@@ -58,15 +60,13 @@ namespace VehicleDetectionProject.Views
         {
             try
             {
-                if (vi == null)
-                {
-                    vi = new VideoInterpreter(videoFeed, cvFile, Dispatcher.CurrentDispatcher);
-                    vi.setCarDidEnterDelegate(CarDidEnter);
-                    vi.setCarDidLeaveDelegate(CarDidLeave);
-                    mediaElementPlayer.Source = new Uri(videoFeed);            
-                    vi.start();
-                }
-
+              if (vi != null) vi.stop();
+              vi = new VideoInterpreter(videoFeed, cvFile, Dispatcher.CurrentDispatcher);
+              vi.setCarDidEnterDelegate(CarDidEnter);
+              vi.setCarDidLeaveDelegate(CarDidLeave);
+              mediaElementPlayer.Source = new Uri(videoFeed);
+              vi.start();
+                                       
                 int index = comboBoxParkingLot.SelectedIndex;
                 string statusMsg = dvm.ParkingLotStatusLongDisplay(pk[index].Is_Lot_Open);
 
