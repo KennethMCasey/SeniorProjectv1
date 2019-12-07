@@ -9,7 +9,7 @@ namespace VehicleDetectionProject.ViewModel
 {
     public class DashboardViewModel
     {
-        DataAccess db = new DataAccess();
+        DataAccess db = new DataAccess();      
 
         public bool IsServerConnected()
         {
@@ -24,6 +24,16 @@ namespace VehicleDetectionProject.ViewModel
         public string ParkingLotStatusLongDisplay(char status)
         {
             return status == 'Y' ? "Open" : "Closed";
+        }
+
+        public void CarDidEnter(int parkingID)
+        {
+            db.CarParked(parkingID);
+        }
+
+        public void CarDidLeave(int parkingID)
+        {
+            db.CarLeft(parkingID);
         }
     }
 }

@@ -39,19 +39,10 @@ namespace VehicleDetectionProject.Views
         {
             InitializeComponent();
         }
-
-        public void CarDidEnter(VideoInterpreter vi)
-        {
-          cvm.CarEntered(1);
-            System.Diagnostics.Debug.WriteLine("HERE");
-        }
-
-
+    
         private void ConfigureView_Loaded(object sender, RoutedEventArgs e)
         {
            FillDataAsync();
-     
-
         }
 
 
@@ -59,8 +50,7 @@ namespace VehicleDetectionProject.Views
         private void ParkingLot_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             try
-            {
-             
+            {             
                 int index = comboBoxParkingLot.SelectedIndex;
                 string statusMsg = cvm.ParkingLotStatusLongDisplay(pk[index].Is_Lot_Open);
                 //Status

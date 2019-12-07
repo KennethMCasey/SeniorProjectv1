@@ -29,19 +29,20 @@ namespace VehicleDetectionProject.Views
         List<ParkingLot> pk = new List<ParkingLot>();
         DashboardViewModel dvm;
         Carz.VideoInterpreter vi;
+        
 
         private static string videoFeed = "C:\\Users\\ps2ho\\Desktop\\ParkingLotBackendGUI-Kenny\\ParkingLotVideo-master\\FarmingdaleSmartParking2\\camera.mp4";
         private static string cvFile = "C:\\Users\\ps2ho\\Desktop\\ParkingLotBackendGUI-Kenny\\ParkingLotVideo-master\\FarmingdaleSmartParking2\\cars.xml";
 
         public void CarDidEnter(VideoInterpreter vi)
         {
-            //cal car did enter stored procedire here with the currently selected parking lot id
+            dvm.CarDidEnter(comboBoxParkingLot.SelectedIndex + 1);
             System.Diagnostics.Debug.WriteLine("CAR DID ENTER CALLED");
         }
 
         public void CarDidLeave(VideoInterpreter vi)
         {
-            //Call car did leave stored procedure here with the currently selected prarking lot id
+            dvm.CarDidLeave(comboBoxParkingLot.SelectedIndex + 1);
             System.Diagnostics.Debug.WriteLine("CAR DID LEAVE CALLED");
         }
 
@@ -60,13 +61,16 @@ namespace VehicleDetectionProject.Views
         {
             try
             {
-              if (vi != null) vi.stop();
-              vi = new VideoInterpreter(videoFeed, cvFile, Dispatcher.CurrentDispatcher);
-              vi.setCarDidEnterDelegate(CarDidEnter);
-              vi.setCarDidLeaveDelegate(CarDidLeave);
-              mediaElementPlayer.Source = new Uri(videoFeed);
-              vi.start();
-                                       
+                if (comboBoxParkingLot.SelectedIndex != -1)
+                {
+                    if (vi != null) vi.stop();
+                    vi = new VideoInterpreter(videoFeed, cvFile, Dispatcher.CurrentDispatcher);
+                    vi.setCarDidEnterDelegate(CarDidEnter);
+                    vi.setCarDidLeaveDelegate(CarDidLeave);
+                    mediaElementPlayer.Source = new Uri(videoFeed);
+                    vi.start();
+                }
+                else mediaElementPlayer.Source = null;
                 int index = comboBoxParkingLot.SelectedIndex;
                 string statusMsg = dvm.ParkingLotStatusLongDisplay(pk[index].Is_Lot_Open);
 
@@ -173,10 +177,10 @@ namespace VehicleDetectionProject.Views
 
             if (status == true) //Connection Found
             {
-                pk = dvm.GetParkingLots();
+                pk = dvm.GetParkingLots();           
                 FillInfo();
                 connectionStatus(true);
-                LoadingData.Visibility = Visibility.Hidden;
+                LoadingData.Visibility = Visibility.Hidden;        
             }
             else //No Connection
             {
