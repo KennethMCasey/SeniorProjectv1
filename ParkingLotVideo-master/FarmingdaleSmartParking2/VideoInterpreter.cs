@@ -103,6 +103,7 @@ namespace Carz
                         {
                             if (didStop) return;
                             vCapture.Read(iMatrix);
+                            if (iMatrix == null) { return; }
                             if (iMatrix.IsEmpty) {  return;  }
                                 //System.Console.Out.WriteLine(iMatrix.Size.ToString());
                                 Emgu.CV.CvInvoke.WaitKey((int)(1 / (fps * 2) * 1000));
@@ -133,7 +134,8 @@ namespace Carz
                             //Uses the cascade xml file provided in the initalizer to draw rectangles arround possible canditates.
                             Rectangle[] rects = casc.DetectMultiScale(oMatrix, 1.01, 5, new Size(700, 700), new Size(1100, 1100));
 
-                            //removes the image from the out matrix if one exists to make room for the new one.
+                        //removes the image from the out matrix if one exists to make room for the new one.
+                        if (oMatrix == null) { oMatrix.Dispose(); iMatrix.Dispose(); dispatcher.Invoke(CarProcessingDone, this); return; }
                             if (oMatrix.IsEmpty) { oMatrix.Dispose(); iMatrix.Dispose(); dispatcher.Invoke(CarProcessingDone, this); return; }
 
                             for (int i = 0; i < oMatrix.Total.ToInt32(); i++) oMatrix.PopBack(1);
@@ -176,6 +178,7 @@ namespace Carz
                             if (showWindow) Emgu.CV.CvInvoke.Imshow("Car Detection Test", iMatrix);
 
                             //discard the now rendered frame
+                            if (iMatrix == null) { oMatrix.Dispose(); iMatrix.Dispose(); dispatcher.Invoke(CarProcessingDone, this); return; }
                             if (iMatrix.IsEmpty) { oMatrix.Dispose(); iMatrix.Dispose(); dispatcher.Invoke(CarProcessingDone, this); return; }
                             iMatrix.PopBack(1);
 
