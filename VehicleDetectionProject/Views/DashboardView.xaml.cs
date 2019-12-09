@@ -31,8 +31,8 @@ namespace VehicleDetectionProject.Views
         Carz.VideoInterpreter vi;
         
 
-        private static string videoFeed = "C:\\Users\\ps2ho\\Desktop\\ParkingLotBackendGUI-Kenny\\ParkingLotVideo-master\\FarmingdaleSmartParking2\\camera.mp4";
-        private static string cvFile = "C:\\Users\\ps2ho\\Desktop\\ParkingLotBackendGUI-Kenny\\ParkingLotVideo-master\\FarmingdaleSmartParking2\\cars.xml";
+        private static string videoFeed = "C:\\Users\\ps2ho\\OneDrive\\Desktop\\ParkingLotBackendGUI-Kenny\\ParkingLotVideo-master\\FarmingdaleSmartParking2\\camera.mp4";
+        private static string cvFile = "C:\\Users\\ps2ho\\OneDrive\\Desktop\\ParkingLotBackendGUI-Kenny\\ParkingLotVideo-master\\FarmingdaleSmartParking2\\cars.xml";
 
         public void CarDidEnter(VideoInterpreter vi)
         {
@@ -62,6 +62,10 @@ namespace VehicleDetectionProject.Views
         {
             FillDataAsync();              
         }
+        
+       void Play(Object o, EventArgs e) {
+           
+            vi.start(); }
 
         //User selects a parking lot and displays existing camera URL
         private void ParkingLot_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -70,13 +74,17 @@ namespace VehicleDetectionProject.Views
             {
                 if (comboBoxParkingLot.SelectedIndex != -1)
                 {
-                    if (vi != null) vi.stop();
+                    if (vi != null) { vi.stop(); mediaElementPlayer.Source = null; }
                     vi = new VideoInterpreter(videoFeed, cvFile, Dispatcher.CurrentDispatcher);
                     vi.setCarDidEnterDelegate(CarDidEnter);
                     vi.setCarDidLeaveDelegate(CarDidLeave);
-                    vi.setCarProcessingDone(CarProcessingDone);
+                    vi.setCarProcessingDone(CarProcessingDone);                   
+                    vi.setfps(40);
+                    vi.setShowWindow(true);
+                    mediaElementPlayer.MediaOpened += Play;
+                   
                     mediaElementPlayer.Source = new Uri(videoFeed);
-                    vi.start();
+                    //vi.start();
                 }
                 else mediaElementPlayer.Source = null;
                 int index = comboBoxParkingLot.SelectedIndex;

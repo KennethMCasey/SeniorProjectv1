@@ -21,6 +21,7 @@ namespace Carz
         private int oldNumCarsInLot;
         private int numCarsInLot;
         private int steady;
+        private int frCt;
 
         private string parkingLotName;
         private int parkingLotId;
@@ -50,12 +51,13 @@ namespace Carz
             numCarsInLot = 0;
             steady = 0;
             oldNumCarsInLot = 0;
-            fps = 30;
+            fps = 60;
             frameWidth = 1920;
             frameHeight = 1080;
             didStart = false;
             didStop = false;
             didEnter = false;
+            frCt = 0;
 
             CarDidEnter = null;
             CarDidLeave = null;
@@ -64,8 +66,8 @@ namespace Carz
             this.dispatcher = dispatcher;
 
             //sets up video stream pull
-            vCapture = new Emgu.CV.VideoCapture(pathToVideoSource);
-            vCapture.SetCaptureProperty(Emgu.CV.CvEnum.CapProp.Fps, fps);
+            vCapture = new Emgu.CV.VideoCapture(pathToVideoSource);           
+           if(fps > 0)  vCapture.SetCaptureProperty(Emgu.CV.CvEnum.CapProp.Fps, fps);
             vCapture.SetCaptureProperty(Emgu.CV.CvEnum.CapProp.FrameWidth, frameWidth);
             vCapture.SetCaptureProperty(Emgu.CV.CvEnum.CapProp.FrameHeight, frameHeight);
             casc = new Emgu.CV.CascadeClassifier(pathToXmlFile);
@@ -103,13 +105,13 @@ namespace Carz
                         {
                             if (didStop) return;
                             vCapture.Read(iMatrix);
-                            if (iMatrix == null) { return; }
-                            if (iMatrix.IsEmpty) {  return;  }
+                            if (iMatrix == null) { iMatrix.Dispose(); iMatrix = null; return; }
+                            if (iMatrix.IsEmpty) { iMatrix.Dispose(); iMatrix = null; return;  }
                                 //System.Console.Out.WriteLine(iMatrix.Size.ToString());
-                                Emgu.CV.CvInvoke.WaitKey((int)(1 / (fps * 2) * 1000));
+                               // Emgu.CV.CvInvoke.WaitKey((int)(1000/(fps)));
                                 //double FrameRate = vCapture.GetCaptureProperty(Emgu.CV.CvEnum.CapProp.Fps);
                                 //System.Diagnostics.Debug.WriteLine(FrameRate);
-                                //Thread.Sleep((int)(1000.0 / FrameRate/2));
+                                if (fps > 0) Thread.Sleep((int)(1000.0 / fps));
                             }
                         catch (Exception e) { return; }
                     }
@@ -122,11 +124,12 @@ namespace Carz
                     {
 
                         //If the matrix used to store the frames is not empty
+                        if (iMatrix == null) { oMatrix.Dispose(); oMatrix = null;  dispatcher.Invoke(CarProcessingDone, this); if (showWindow) Emgu.CV.CvInvoke.DestroyAllWindows(); return; }
                         if (!iMatrix.IsEmpty)
-                        {
+                        {                            
                             didEnter = true;
 
-                            if (didStop) { oMatrix.Dispose(); iMatrix.Dispose(); dispatcher.Invoke(CarProcessingDone, this); return; }
+                            if (didStop) { oMatrix.Dispose(); oMatrix = null; dispatcher.Invoke(CarProcessingDone, this); if (showWindow) Emgu.CV.CvInvoke.DestroyAllWindows(); return; }
                             //Converts the contents of the imatrix to greyscale, export results to omatrix
                             //this is to ensure proper processing
                             Emgu.CV.CvInvoke.CvtColor(iMatrix, oMatrix, Emgu.CV.CvEnum.ColorConversion.Bgr2Gray);
@@ -135,8 +138,8 @@ namespace Carz
                             Rectangle[] rects = casc.DetectMultiScale(oMatrix, 1.01, 5, new Size(700, 700), new Size(1100, 1100));
 
                         //removes the image from the out matrix if one exists to make room for the new one.
-                        if (oMatrix == null) { oMatrix.Dispose(); iMatrix.Dispose(); dispatcher.Invoke(CarProcessingDone, this); return; }
-                            if (oMatrix.IsEmpty) { oMatrix.Dispose(); iMatrix.Dispose(); dispatcher.Invoke(CarProcessingDone, this); return; }
+                        if (oMatrix == null) { oMatrix.Dispose(); oMatrix = null; dispatcher.Invoke(CarProcessingDone, this); if (showWindow) Emgu.CV.CvInvoke.DestroyAllWindows(); return; }
+                            if (oMatrix.IsEmpty) { oMatrix.Dispose(); oMatrix = null; dispatcher.Invoke(CarProcessingDone, this); if (showWindow) Emgu.CV.CvInvoke.DestroyAllWindows(); return; }
 
                             for (int i = 0; i < oMatrix.Total.ToInt32(); i++) oMatrix.PopBack(1);
 
@@ -172,14 +175,15 @@ namespace Carz
                             if (carsInFrame > oldNumCarsInLot && steady > 20) { for (int i = 0; i < carsInFrame - oldNumCarsInLot; i++) dispatcher.Invoke(CarDidEnter, this); oldNumCarsInLot = numCarsInLot; }
                             if (carsInFrame < oldNumCarsInLot && steady > 20) { for (int i = 0; i < oldNumCarsInLot - carsInFrame; i++) dispatcher.Invoke(CarDidLeave, this); oldNumCarsInLot = numCarsInLot; }
 
-
-
                             //if the show window flag is true we push the drawn images to the window
-                            if (showWindow) Emgu.CV.CvInvoke.Imshow("Car Detection Test", iMatrix);
+                            if (showWindow) {
+                                if (iMatrix == null) { oMatrix.Dispose(); ; dispatcher.Invoke(CarProcessingDone, this); if (showWindow) Emgu.CV.CvInvoke.DestroyAllWindows(); return; }
+                                if (iMatrix.IsEmpty) { oMatrix.Dispose(); ; dispatcher.Invoke(CarProcessingDone, this); if (showWindow) Emgu.CV.CvInvoke.DestroyAllWindows(); return; }
+                                Emgu.CV.CvInvoke.Imshow("Car Detection Test", iMatrix); }
 
                             //discard the now rendered frame
-                            if (iMatrix == null) { oMatrix.Dispose(); iMatrix.Dispose(); dispatcher.Invoke(CarProcessingDone, this); return; }
-                            if (iMatrix.IsEmpty) { oMatrix.Dispose(); iMatrix.Dispose(); dispatcher.Invoke(CarProcessingDone, this); return; }
+                            if (iMatrix == null) { oMatrix.Dispose(); oMatrix = null; dispatcher.Invoke(CarProcessingDone, this); if (showWindow) Emgu.CV.CvInvoke.DestroyAllWindows(); return; }
+                            if (iMatrix.IsEmpty) { oMatrix.Dispose(); oMatrix = null; dispatcher.Invoke(CarProcessingDone, this); if (showWindow) Emgu.CV.CvInvoke.DestroyAllWindows(); return; }
                             iMatrix.PopBack(1);
 
                             //Distroys windows and stops loop if the escape key is pressed
@@ -188,20 +192,17 @@ namespace Carz
                                 if (showWindow) Emgu.CV.CvInvoke.DestroyAllWindows();
                                 break;
                             }
-                            if (didStop) { oMatrix.Dispose(); iMatrix.Dispose(); dispatcher.Invoke(CarProcessingDone, this); return; }
-                        } else if (didEnter) { oMatrix.Dispose(); iMatrix.Dispose(); dispatcher.Invoke(CarProcessingDone, this); return; }
+                            if (didStop) { oMatrix.Dispose(); oMatrix = null; dispatcher.Invoke(CarProcessingDone, this); if (showWindow) Emgu.CV.CvInvoke.DestroyAllWindows(); return; }
+                        } else if (didEnter) { oMatrix.Dispose(); oMatrix = null; dispatcher.Invoke(CarProcessingDone, this); if (showWindow) Emgu.CV.CvInvoke.DestroyAllWindows(); return; }
                     }
-                    catch (Exception e) { oMatrix.Dispose(); iMatrix.Dispose(); dispatcher.Invoke(CarProcessingDone, this); return; }
+                    catch (Exception e) { oMatrix.Dispose(); oMatrix = null; dispatcher.Invoke(CarProcessingDone, this); if (showWindow) Emgu.CV.CvInvoke.DestroyAllWindows(); return; }
                 }
-
-
-
             });
         }
 
         public void stop() { didStop = true; }
 
-        public void setCarProcessingDone(Action<VideoInterpreter> func) { CarProcessingDone = func; }
+        public void setCarProcessingDone(Action<VideoInterpreter> func) { if (!didStart) CarProcessingDone = func; }
 
         //This will be called every time a car leaves async
         public void setCarDidLeaveDelegate(Action<VideoInterpreter> func) { if (!didStart) CarDidLeave = func; }
@@ -213,7 +214,7 @@ namespace Carz
         public void setShowWindow(bool flag) { if (!didStart) this.showWindow = flag; }
 
         //overides the 30fps count if needed
-        public void setfps(double fps) { if (!didStart) this.fps = fps; }
+        public void setfps(double fps) { if (!didStart) if (fps > 0) { this.fps = fps; vCapture.SetCaptureProperty(Emgu.CV.CvEnum.CapProp.Fps, fps); }  }
 
         //overides the 1920 frame width if needed
         public void setFrameWidth(double width) { if (!didStart) this.frameWidth = width; }
