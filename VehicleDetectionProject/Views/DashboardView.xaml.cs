@@ -38,12 +38,19 @@ namespace VehicleDetectionProject.Views
         {
             dvm.CarDidEnter(comboBoxParkingLot.SelectedIndex + 1);
             System.Diagnostics.Debug.WriteLine("CAR DID ENTER CALLED");
+            FillInfo();
         }
 
         public void CarDidLeave(VideoInterpreter vi)
         {
             dvm.CarDidLeave(comboBoxParkingLot.SelectedIndex + 1);
             System.Diagnostics.Debug.WriteLine("CAR DID LEAVE CALLED");
+            FillInfo();
+        }
+
+        public void CarProcessingDone(VideoInterpreter vi)
+        {
+            System.Diagnostics.Debug.WriteLine("CarPricessingDone Called");
         }
 
         public DashboardView()
@@ -67,6 +74,7 @@ namespace VehicleDetectionProject.Views
                     vi = new VideoInterpreter(videoFeed, cvFile, Dispatcher.CurrentDispatcher);
                     vi.setCarDidEnterDelegate(CarDidEnter);
                     vi.setCarDidLeaveDelegate(CarDidLeave);
+                    vi.setCarProcessingDone(CarProcessingDone);
                     mediaElementPlayer.Source = new Uri(videoFeed);
                     vi.start();
                 }

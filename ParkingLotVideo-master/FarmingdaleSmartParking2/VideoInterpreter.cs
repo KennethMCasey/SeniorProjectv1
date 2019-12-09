@@ -30,6 +30,7 @@ namespace Carz
 
         private Action<VideoInterpreter> CarDidEnter;
         private Action<VideoInterpreter> CarDidLeave;
+        private Action<VideoInterpreter> CarProcessingDone;
 
         private double fps;
         private double frameWidth;
@@ -38,6 +39,7 @@ namespace Carz
         private Emgu.CV.VideoCapture vCapture;
         private Emgu.CV.CascadeClassifier casc;
         private bool didStop;
+        private bool didEnter;
 
         private Dispatcher dispatcher;
 
@@ -53,6 +55,7 @@ namespace Carz
             frameHeight = 1080;
             didStart = false;
             didStop = false;
+            didEnter = false;
 
             CarDidEnter = null;
             CarDidLeave = null;
@@ -74,6 +77,7 @@ namespace Carz
 
             if (this.CarDidEnter == null) CarDidEnter = CarDidEnterDefault;
             if (this.CarDidLeave == null) CarDidLeave = CarDidLeaveDefault;
+            if (this.CarProcessingDone == null) CarProcessingDone = CarProcessingDoneDefault;
 
             //flag to note process started to prevent changing peramaters that would break the processing
             didStart = true;
@@ -84,8 +88,8 @@ namespace Carz
 
             await Task.Run(() =>
             {
-                try
-                { 
+
+
 
                 //creates a window if desired, window for testing purposes 
                 if (showWindow) Emgu.CV.CvInvoke.NamedWindow("Car Detection Test", Emgu.CV.CvEnum.NamedWindowType.FreeRatio);
@@ -95,59 +99,68 @@ namespace Carz
                 Task.Run(() =>
                 {
                     for (; ; )
-                    {
-                        if (didStop) return;
-                        vCapture.Read(iMatrix);
-                        if (iMatrix.IsEmpty) return;
-                        //System.Console.Out.WriteLine(iMatrix.Size.ToString());
-                        //Emgu.CV.CvInvoke.WaitKey((int)(1 / fps * 1000));
-                        double FrameRate = vCapture.GetCaptureProperty(Emgu.CV.CvEnum.CapProp.Fps);
-                        Thread.Sleep((int)(1000.0 / FrameRate));
+                    { try
+                        {
+                            if (didStop) return;
+                            vCapture.Read(iMatrix);
+                            if (iMatrix.IsEmpty) {  return;  }
+                                //System.Console.Out.WriteLine(iMatrix.Size.ToString());
+                                Emgu.CV.CvInvoke.WaitKey((int)(1 / (fps * 2) * 1000));
+                                //double FrameRate = vCapture.GetCaptureProperty(Emgu.CV.CvEnum.CapProp.Fps);
+                                //System.Diagnostics.Debug.WriteLine(FrameRate);
+                                //Thread.Sleep((int)(1000.0 / FrameRate/2));
+                            }
+                        catch (Exception e) { return; }
                     }
                 });
 
                 //This async task continually process the pulled frames
                 for (; ; )
                 {
-
-                    //If the matrix used to store the frames is not empty
-                    if (!iMatrix.IsEmpty)
+                    try
                     {
 
-                            if (didStop) return;
-                        //Converts the contents of the imatrix to greyscale, export results to omatrix
-                        //this is to ensure proper processing
-                        Emgu.CV.CvInvoke.CvtColor(iMatrix, oMatrix, Emgu.CV.CvEnum.ColorConversion.Bgr2Gray);
-
-                        //Uses the cascade xml file provided in the initalizer to draw rectangles arround possible canditates.
-                        Rectangle[] rects = casc.DetectMultiScale(oMatrix, 1.01, 5, new Size(700, 700), new Size(1100, 1100));
-
-                        //removes the image from the out matrix if one exists to make room for the new one.
-                        if (oMatrix.IsEmpty) return;
-                        oMatrix.PopBack(1);
-
-                        //sets inital value to zero
-                        int carsInFrame = 0;
-
-                        //loops through all of the rectangles in the discorvered object array
-                        foreach (Rectangle rect in rects)
+                        //If the matrix used to store the frames is not empty
+                        if (!iMatrix.IsEmpty)
                         {
-                            //draws the rectangles on the imatrix image for display if we wish to show the window
-                            //we use imatrix as it is in color
-                            if (showWindow)
+                            didEnter = true;
+
+                            if (didStop) { oMatrix.Dispose(); iMatrix.Dispose(); dispatcher.Invoke(CarProcessingDone, this); return; }
+                            //Converts the contents of the imatrix to greyscale, export results to omatrix
+                            //this is to ensure proper processing
+                            Emgu.CV.CvInvoke.CvtColor(iMatrix, oMatrix, Emgu.CV.CvEnum.ColorConversion.Bgr2Gray);
+
+                            //Uses the cascade xml file provided in the initalizer to draw rectangles arround possible canditates.
+                            Rectangle[] rects = casc.DetectMultiScale(oMatrix, 1.01, 5, new Size(700, 700), new Size(1100, 1100));
+
+                            //removes the image from the out matrix if one exists to make room for the new one.
+                            if (oMatrix.IsEmpty) { oMatrix.Dispose(); iMatrix.Dispose(); dispatcher.Invoke(CarProcessingDone, this); return; }
+
+                            for (int i = 0; i < oMatrix.Total.ToInt32(); i++) oMatrix.PopBack(1);
+
+
+                            //sets inital value to zero
+                            int carsInFrame = 0;
+
+                            //loops through all of the rectangles in the discorvered object array
+                            foreach (Rectangle rect in rects)
                             {
-                                var x = rect.X;
-                                var y = rect.Y;
-                                var w = rect.Width;
-                                var h = rect.Height;
-                                Emgu.CV.CvInvoke.Rectangle(iMatrix, new Rectangle(x, y, w, h), new Emgu.CV.Structure.MCvScalar(50));
+                                //draws the rectangles on the imatrix image for display if we wish to show the window
+                                //we use imatrix as it is in color
+                                if (showWindow)
+                                {
+                                    var x = rect.X;
+                                    var y = rect.Y;
+                                    var w = rect.Width;
+                                    var h = rect.Height;
+                                    Emgu.CV.CvInvoke.Rectangle(iMatrix, new Rectangle(x, y, w, h), new Emgu.CV.Structure.MCvScalar(50));
+                                }
+                                //increase the number of cars in frame for each iteration
+                                carsInFrame++;
                             }
-                            //increase the number of cars in frame for each iteration
-                            carsInFrame++;
-                        }
-                            
+
                             if (carsInFrame == numCarsInLot) steady++;
-                       else steady = 0;
+                            else steady = 0;
 
                             //update the number of cars
                             numCarsInLot = carsInFrame;
@@ -157,31 +170,35 @@ namespace Carz
                             if (carsInFrame > oldNumCarsInLot && steady > 20) { for (int i = 0; i < carsInFrame - oldNumCarsInLot; i++) dispatcher.Invoke(CarDidEnter, this); oldNumCarsInLot = numCarsInLot; }
                             if (carsInFrame < oldNumCarsInLot && steady > 20) { for (int i = 0; i < oldNumCarsInLot - carsInFrame; i++) dispatcher.Invoke(CarDidLeave, this); oldNumCarsInLot = numCarsInLot; }
 
-                            
+
 
                             //if the show window flag is true we push the drawn images to the window
                             if (showWindow) Emgu.CV.CvInvoke.Imshow("Car Detection Test", iMatrix);
 
                             //discard the now rendered frame
-                            
+                            if (iMatrix.IsEmpty) { oMatrix.Dispose(); iMatrix.Dispose(); dispatcher.Invoke(CarProcessingDone, this); return; }
                             iMatrix.PopBack(1);
 
-                        //Distroys windows and stops loop if the escape key is pressed
-                        if (showWindow && Emgu.CV.CvInvoke.WaitKey(33) == 27)
-                        {
-                            if (showWindow) Emgu.CV.CvInvoke.DestroyAllWindows();
-                            break;
-                        }
-                            if (didStop) return;
-                        }
+                            //Distroys windows and stops loop if the escape key is pressed
+                            if (showWindow && Emgu.CV.CvInvoke.WaitKey(33) == 27)
+                            {
+                                if (showWindow) Emgu.CV.CvInvoke.DestroyAllWindows();
+                                break;
+                            }
+                            if (didStop) { oMatrix.Dispose(); iMatrix.Dispose(); dispatcher.Invoke(CarProcessingDone, this); return; }
+                        } else if (didEnter) { oMatrix.Dispose(); iMatrix.Dispose(); dispatcher.Invoke(CarProcessingDone, this); return; }
+                    }
+                    catch (Exception e) { oMatrix.Dispose(); iMatrix.Dispose(); dispatcher.Invoke(CarProcessingDone, this); return; }
                 }
 
-            } catch (Exception e) { }
+
 
             });
         }
 
         public void stop() { didStop = true; }
+
+        public void setCarProcessingDone(Action<VideoInterpreter> func) { CarProcessingDone = func; }
 
         //This will be called every time a car leaves async
         public void setCarDidLeaveDelegate(Action<VideoInterpreter> func) { if (!didStart) CarDidLeave = func; }
@@ -222,6 +239,11 @@ namespace Carz
          } 
          
          */
+
+
+
+        private void CarProcessingDoneDefault(VideoInterpreter sender) { }
+
         private void CarDidEnterDefault(VideoInterpreter sender)
         {
             /*
